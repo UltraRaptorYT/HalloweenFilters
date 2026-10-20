@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import NextImage from "next/image";
-import Link from "next/link";
-import type { ChangeEvent } from "react";
 import type { FaceLandmarker as FaceLandmarkerType, PoseLandmarker as PoseLandmarkerType } from "@mediapipe/tasks-vision";
 import type { TrackedArRenderer } from "@/lib/tracked-3d-lenses";
+import { drawGrinFilter } from "@/lib/grin-filter";
 import { normalizeLipGap, shouldDogTongueBeOpen } from "@/lib/dog-mouth";
 import { getQueuedPhotos, removeQueuedPhoto, saveQueuedPhoto } from "@/lib/offline-photo-queue";
 
@@ -17,6 +16,7 @@ type Filter = {
   texture: string;
   style: "makeup" | "transformation";
   tint: string;
+  preview?: string;
 };
 
 const filters: Filter[] = [
@@ -32,7 +32,7 @@ const filters: Filter[] = [
   { id: "bats", name: "Night Swarm", mood: "NOCTURNAL MARKS & WINGED SHADOW", symbol: "NIGHT", texture: "carnival", style: "transformation", tint: "#332b3d" },
   { id: "spider", name: "Widow's Web", mood: "INKED SILK & SPIDER VEINS", symbol: "WEB", texture: "stitched", style: "transformation", tint: "#4b344f" },
   { id: "ice", name: "Whiteout", mood: "FROZEN LASHES & ICE CRYSTAL", symbol: "ICE", texture: "frostbitten", style: "transformation", tint: "#95c6d3" },
-  { id: "clown", name: "The Grin", mood: "WORN PORCELAIN & CARNIVAL PAINT", symbol: "GRIN", texture: "carnival", style: "transformation", tint: "#863f47" },
+  { id: "clown", name: "The Grin", mood: "RED EYES & A WIDE, TRACKED SMILE", symbol: "GRIN", texture: "", preview: "/filters/grin-red-iris.png", style: "transformation", tint: "#863f47" },
   { id: "boo", name: "The Veiled", mood: "ASHEN SKIN & EMPTY LIGHT", symbol: "VEIL", texture: "frostbitten", style: "transformation", tint: "#a1a7b4" },
   { id: "beret", name: "Candy Widow", mood: "SUGAR GLASS & OLD ROUGE", symbol: "ROUGE", texture: "carnival", style: "transformation", tint: "#7d3a50" },
   { id: "cat", name: "Black Cat", mood: "SMOKE, SLATE & REFLECTIVE EYES", symbol: "FELINE", texture: "hag", style: "transformation", tint: "#403746" },
@@ -1007,7 +1007,6 @@ function drawFaceEffect(ctx: CanvasRenderingContext2D, effect: string, landmarks
 
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const arCanvasRef = useRef<HTMLCanvasElement>(null);
   const arRendererRef = useRef<TrackedArRenderer | null>(null);
@@ -1017,18 +1016,21 @@ export default function Home() {
   const videoLandmarkerRef = useRef<FaceLandmarkerType | null>(null);
   const imageLandmarkerRef = useRef<FaceLandmarkerType | null>(null);
   const videoLandmarkerPromiseRef = useRef<Promise<FaceLandmarkerType> | null>(null);
+  const videoFaceCpuFallbackRef = useRef(false);
   const imageLandmarkerPromiseRef = useRef<Promise<FaceLandmarkerType> | null>(null);
   const videoPoseLandmarkerRef = useRef<PoseLandmarkerType | null>(null);
   const imagePoseLandmarkerRef = useRef<PoseLandmarkerType | null>(null);
   const videoPosePromiseRef = useRef<Promise<PoseLandmarkerType> | null>(null);
+  const videoPoseCpuFallbackRef = useRef(false);
   const imagePosePromiseRef = useRef<Promise<PoseLandmarkerType> | null>(null);
   const landmarksRef = useRef<Landmark[][]>([]);
   const faceOpennessRef = useRef<number[]>([]);
   const faceTexturesRef = useRef<Record<string, FaceTexture>>({});
   const dogImagesRef = useRef<Partial<Record<keyof typeof dogImageSources, HTMLImageElement>>>({});
+  const grinIrisRef = useRef<HTMLImageElement | null>(null);
+  const grinFrameCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const dogTongueStatesRef = useRef<Array<{ isOpen: boolean; openedAt: number }>>([]);
   const dogEarPhysicsRef = useRef<DogEarPhysics[]>([]);
-  const dogMouthDebugRef = useRef({ openness: 0, isOpen: false, lastUpdate: 0 });
   const sceneImagesRef = useRef<Record<string, HTMLImageElement>>({});
   const costumeTexturesRef = useRef<Record<string, HTMLImageElement>>({});
   const posesRef = useRef<Landmark[][]>([]);
@@ -1044,11 +1046,9 @@ export default function Home() {
   const currentQueueIdRef = useRef("");
   const countdownIntervalRef = useRef<number | null>(null);
   const countdownValueRef = useRef<number | null>(null);
-  const [activeFilter, setActiveFilter] = useState(filters[0]);
+  const [activeFilter, setActiveFilter] = useState<Filter | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
   const [facing, setFacing] = useState<"user" | "environment">("user");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -1060,19 +1060,15 @@ export default function Home() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [tracking, setTracking] = useState("Loading face tracking…");
-  const [showDogMouthDebug, setShowDogMouthDebug] = useState(false);
-  const [dogMouthDebug, setDogMouthDebug] = useState<{ openness: number | null; isOpen: boolean }>({ openness: null, isOpen: false });
-  const showDogMouthDebugRef = useRef(false);
-  showDogMouthDebugRef.current = showDogMouthDebug;
   const [bodyEffectsReady, setBodyEffectsReady] = useState(false);
   const [effectCategory, setEffectCategory] = useState<"face" | "background" | "costume">("face");
   const [activeBackground, setActiveBackground] = useState("none");
   const [activeCostume, setActiveCostume] = useState("none");
-  const activeIndex = filters.findIndex((filter) => filter.id === activeFilter.id);
   const needsBodyTracking = activeBackground !== "none" || activeCostume !== "none";
   const visibleOptions = effectCategory === "face" ? filters : effectCategory === "background" ? backgrounds : costumes;
-  const selectedOptionId = effectCategory === "face" ? activeFilter.id : effectCategory === "background" ? activeBackground : activeCostume;
-  const selectedLens = visibleOptions.find((option) => option.id === selectedOptionId) ?? visibleOptions[0];
+  const selectedOptionId = effectCategory === "face" ? activeFilter?.id ?? "none" : effectCategory === "background" ? activeBackground : activeCostume;
+  const activeIndex = visibleOptions.findIndex((option) => option.id === selectedOptionId);
+  const selectedLens = visibleOptions.find((option) => option.id === selectedOptionId);
 
   async function ensureFaceTracker(mode: "IMAGE" | "VIDEO") {
     const detectorRef = mode === "VIDEO" ? videoLandmarkerRef : imageLandmarkerRef;
@@ -1108,6 +1104,20 @@ export default function Home() {
     }
   }
 
+  async function switchVideoFaceTrackerToCpu() {
+    videoLandmarkerRef.current?.close();
+    videoLandmarkerRef.current = null;
+    const { FaceLandmarker, FilesetResolver } = await import("@mediapipe/tasks-vision");
+    const vision = await FilesetResolver.forVisionTasks("/mediapipe/wasm");
+    videoLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: "/models/face_landmarker.task", delegate: "CPU" },
+      runningMode: "VIDEO",
+      numFaces: maxTrackedFaces,
+      outputFaceBlendshapes: true,
+    });
+    setTracking("Face tracking ready");
+  }
+
   useEffect(() => {
     let cancelled = false;
     for (const [scene, source] of Object.entries(sceneImageSources)) {
@@ -1129,6 +1139,16 @@ export default function Home() {
       };
       image.src = source;
     }
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const iris = new Image();
+    iris.onload = () => {
+      if (!cancelled) grinIrisRef.current = iris;
+    };
+    iris.src = "/filters/grin-red-iris.png";
     return () => { cancelled = true; };
   }, []);
 
@@ -1225,6 +1245,20 @@ export default function Home() {
     }
   }
 
+  async function switchVideoPoseTrackerToCpu() {
+    videoPoseLandmarkerRef.current?.close();
+    videoPoseLandmarkerRef.current = null;
+    const { PoseLandmarker, FilesetResolver } = await import("@mediapipe/tasks-vision");
+    const vision = await FilesetResolver.forVisionTasks("/mediapipe/wasm");
+    videoPoseLandmarkerRef.current = await PoseLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: "/models/pose_landmarker_lite.task", delegate: "CPU" },
+      runningMode: "VIDEO",
+      numPoses: maxTrackedPoses,
+      outputSegmentationMasks: true,
+    });
+    setBodyEffectsReady(true);
+  }
+
   function storePoseResult(result: ReturnType<PoseLandmarkerType["detectForVideo"]>, mirrored: boolean) {
     posesRef.current = result.landmarks as Landmark[][];
     const masks = result.segmentationMasks ?? [];
@@ -1256,7 +1290,9 @@ export default function Home() {
           const value = array instanceof Uint8Array ? raw / 255 : raw;
           confidence = Math.max(confidence, value);
         }
-        const edge = Math.max(0, Math.min(1, (confidence - 0.18) / 0.56));
+        // Raise the cutout edge slightly to reject the low-confidence halo around hair
+        // and shoulders while keeping a smooth transition at the person boundary.
+        const edge = Math.max(0, Math.min(1, (confidence - 0.24) / 0.54));
         const alpha = Math.round(edge * edge * (3 - 2 * edge) * 255);
         const screenX = mirrored ? maskWidth - 1 - x : x;
         const index = (y * maskWidth + screenX) * 4;
@@ -1267,7 +1303,7 @@ export default function Home() {
       }
     }
     ctx.putImageData(imageData, 0, 0);
-    const outputScale = Math.min(3, 1200 / Math.max(maskWidth, maskHeight));
+    const outputScale = Math.min(4, 1600 / Math.max(maskWidth, maskHeight));
     const outputWidth = Math.max(maskWidth, Math.round(maskWidth * outputScale));
     const outputHeight = Math.max(maskHeight, Math.round(maskHeight * outputScale));
     if (output.width !== outputWidth || output.height !== outputHeight) {
@@ -1279,7 +1315,7 @@ export default function Home() {
       outputContext.clearRect(0, 0, outputWidth, outputHeight);
       outputContext.imageSmoothingEnabled = true;
       outputContext.imageSmoothingQuality = "high";
-      outputContext.filter = "blur(1px)";
+      outputContext.filter = "blur(1.1px)";
       outputContext.drawImage(target, 0, 0, outputWidth, outputHeight);
       outputContext.filter = "none";
     }
@@ -1324,12 +1360,11 @@ export default function Home() {
     let cancelled = false;
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    const image = imageRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const paint = (sourceWidth: number, sourceHeight: number, mirrored: boolean) => {
+    const paint = (sourceWidth: number, sourceHeight: number, mirrored: boolean, frameSource: CanvasImageSource | null) => {
       const bounds = canvas.getBoundingClientRect();
       const ratio = window.devicePixelRatio || 1;
       const width = bounds.width;
@@ -1341,9 +1376,28 @@ export default function Home() {
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.clearRect(0, 0, width, height);
       const now = performance.now() / 1000;
-      if (showDogMouthDebugRef.current && landmarksRef.current.length === 0 && dogMouthDebugRef.current.openness !== 0) {
-              dogMouthDebugRef.current = { openness: 0, isOpen: false, lastUpdate: now };
-        setDogMouthDebug({ openness: null, isOpen: false });
+      let grinFrame: HTMLCanvasElement | null = null;
+      if (activeFilter?.id === "clown" && frameSource && sourceWidth > 0 && sourceHeight > 0) {
+        grinFrame = grinFrameCanvasRef.current ?? document.createElement("canvas");
+        grinFrameCanvasRef.current = grinFrame;
+        grinFrame.width = Math.max(1, Math.round(width));
+        grinFrame.height = Math.max(1, Math.round(height));
+        const frameCtx = grinFrame.getContext("2d");
+        if (frameCtx) {
+          const scale = Math.max(width / sourceWidth, height / sourceHeight);
+          const cropWidth = width / scale;
+          const cropHeight = height / scale;
+          const cropX = (sourceWidth - cropWidth) / 2;
+          const cropY = (sourceHeight - cropHeight) / 2;
+          frameCtx.clearRect(0, 0, grinFrame.width, grinFrame.height);
+          frameCtx.save();
+          if (mirrored) {
+            frameCtx.translate(grinFrame.width, 0);
+            frameCtx.scale(-1, 1);
+          }
+          frameCtx.drawImage(frameSource, cropX, cropY, cropWidth, cropHeight, 0, 0, grinFrame.width, grinFrame.height);
+          frameCtx.restore();
+        }
       }
       const poseMask = poseMaskOutputCanvasRef.current;
       const sceneImage = sceneImagesRef.current[activeBackground];
@@ -1372,6 +1426,7 @@ export default function Home() {
         drawBodyCostume(ctx, activeCostume, posesRef.current, width, height, sourceWidth, sourceHeight, mirrored, costumeTexturesRef.current);
       }
       for (const [faceIndex, faceLandmarks] of landmarksRef.current.entries()) {
+        if (!activeFilter) continue;
         if (activeFilter.id === "dog") {
           const lipTop = faceLandmarks[13];
           const lipBottom = faceLandmarks[14];
@@ -1391,16 +1446,10 @@ export default function Home() {
             dogEarPhysicsRef.current[faceIndex] = earPhysics;
             drawDogImageFilter(ctx, faceLandmarks, images as Record<keyof typeof dogImageSources, HTMLImageElement>, width, height, sourceWidth, sourceHeight, mirrored, earPhysics, now, tongueState.isOpen);
           }
-          if (showDogMouthDebugRef.current && faceIndex === 0) {
-            const roundedOpenness = Math.round(openness * 100) / 100;
-            const debug = dogMouthDebugRef.current;
-            if (debug.isOpen !== tongueState.isOpen || debug.openness !== roundedOpenness || now - debug.lastUpdate > 0.5) {
-              debug.openness = roundedOpenness;
-              debug.isOpen = tongueState.isOpen;
-              debug.lastUpdate = now;
-              setDogMouthDebug({ openness: roundedOpenness, isOpen: tongueState.isOpen });
-            }
-          }
+          continue;
+        }
+        if (activeFilter.id === "clown") {
+          if (grinFrame) drawGrinFilter(ctx, grinFrame, faceLandmarks, grinIrisRef.current, width, height, sourceWidth, sourceHeight, mirrored);
           continue;
         }
         const texture = faceTexturesRef.current[activeFilter.texture];
@@ -1417,53 +1466,19 @@ export default function Home() {
         sourceWidth,
         sourceHeight,
         mirrored,
-        lensId: activeFilter.id,
-        tongueOpen: dogTongueStatesRef.current.map((state) => state.isOpen),
+        lensId: activeFilter?.id ?? "none",
+        tongueOpen: dogTongueStatesRef.current.slice(0, landmarksRef.current.length).map((state) => state.isOpen),
       });
+      // Drop states for faces that disappeared so a new face at that index
+      // cannot inherit the previous person's open-mouth tongue state.
+      dogTongueStatesRef.current.length = landmarksRef.current.length;
     };
-
-    if (imageUrl && imageLoaded && image?.complete && image.naturalWidth) {
-      let cancelledDetect = false;
-      const runStill = async () => {
-        try {
-          setTracking("Finding your face…");
-          const detector = await ensureFaceTracker("IMAGE");
-          if (cancelledDetect || cancelled) return;
-          const result = detector.detect(image);
-          landmarksRef.current = result.faceLandmarks as Landmark[][];
-          faceOpennessRef.current = (result.faceBlendshapes ?? []).map((shape) => shape.categories.find((category) => category.categoryName === "jawOpen")?.score ?? 0);
-          setTracking(landmarksRef.current.length ? `${landmarksRef.current.length} ${landmarksRef.current.length === 1 ? "face" : "faces"} found · effects follow you` : "No face found · try another photo");
-          if (needsBodyTracking) {
-            const poseDetector = await ensurePoseTracker("IMAGE");
-            if (cancelledDetect || cancelled) return;
-            storePoseResult(poseDetector.detect(image), false);
-          } else {
-            posesRef.current = [];
-            setBodyEffectsReady(false);
-          }
-          const animateStill = () => {
-            if (cancelledDetect || cancelled) return;
-            const now = performance.now();
-            if (now - lastCanvasPaintRef.current >= 33) {
-              paint(image.naturalWidth, image.naturalHeight, false);
-              lastCanvasPaintRef.current = now;
-            }
-            animation = requestAnimationFrame(animateStill);
-          };
-          animateStill();
-        } catch {
-          setTracking("Face tracking unavailable");
-        }
-      };
-      void runStill();
-      return () => { cancelledDetect = true; cancelAnimationFrame(animation); };
-    }
 
     if (!cameraOn || !video) {
       landmarksRef.current = [];
       posesRef.current = [];
       poseMaskReadyRef.current = false;
-      paint(1, 1, false);
+      paint(1, 1, false, null);
       return;
     }
 
@@ -1473,11 +1488,14 @@ export default function Home() {
       posesRef.current = [];
     }
 
+    const touchCamera = window.matchMedia("(pointer: coarse)").matches;
+    const faceDetectionInterval = touchCamera ? 70 : 40;
+    const canvasPaintInterval = touchCamera ? 42 : 33;
     const render = () => {
       if (cancelled) return;
       if (video.videoWidth && video.videoHeight) {
         const now = performance.now();
-        if (videoLandmarkerRef.current && video.currentTime !== lastVideoTimeRef.current && now - lastDetectionRef.current > 40) {
+        if (videoLandmarkerRef.current && video.currentTime !== lastVideoTimeRef.current && now - lastDetectionRef.current > faceDetectionInterval) {
           try {
             const result = detectFaceForVideo(videoLandmarkerRef.current, video, now);
             landmarksRef.current = result.faceLandmarks as Landmark[][];
@@ -1487,6 +1505,13 @@ export default function Home() {
             landmarksRef.current = [];
             videoLandmarkerRef.current.close();
             videoLandmarkerRef.current = null;
+            if (!videoFaceCpuFallbackRef.current) {
+              videoFaceCpuFallbackRef.current = true;
+              setTracking("Switching to compatible face tracking...");
+              void switchVideoFaceTrackerToCpu().catch(() => setTracking("Face tracking unavailable on this device"));
+            } else {
+              setTracking("Face tracking unavailable on this device");
+            }
             setTracking("Face tracking failed · restart the camera");
           }
           lastVideoTimeRef.current = video.currentTime;
@@ -1499,11 +1524,15 @@ export default function Home() {
           } catch {
             posesRef.current = [];
             setBodyEffectsReady(false);
+            if (!videoPoseCpuFallbackRef.current) {
+              videoPoseCpuFallbackRef.current = true;
+              void switchVideoPoseTrackerToCpu().catch(() => setTracking("Background tracking unavailable on this device"));
+            }
           }
           lastPoseDetectionRef.current = video.currentTime;
         }
-        if (now - lastCanvasPaintRef.current >= 33) {
-          paint(video.videoWidth, video.videoHeight, facing === "user");
+        if (now - lastCanvasPaintRef.current >= canvasPaintInterval) {
+          paint(video.videoWidth, video.videoHeight, facing === "user", video);
           lastCanvasPaintRef.current = now;
         }
       }
@@ -1511,7 +1540,7 @@ export default function Home() {
     };
     animation = requestAnimationFrame(render);
     return () => { cancelled = true; cancelAnimationFrame(animation); };
-  }, [activeBackground, activeCostume, activeFilter, cameraOn, facing, imageLoaded, imageUrl, needsBodyTracking]);
+  }, [activeBackground, activeCostume, activeFilter, cameraOn, facing, needsBodyTracking]);
 
   async function startCamera(nextFacing = facing) {
     const requestId = ++cameraRequestRef.current;
@@ -1522,10 +1551,23 @@ export default function Home() {
     }
     streamRef.current?.getTracks().forEach((track) => track.stop());
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: { facingMode: { ideal: nextFacing }, width: { ideal: 1280 }, height: { ideal: 1600 } },
-      });
+      const mobileCamera = window.matchMedia("(pointer: coarse)").matches;
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: { ideal: nextFacing },
+            width: { ideal: mobileCamera ? 720 : 1280 },
+            height: { ideal: mobileCamera ? 1280 : 1600 },
+            frameRate: { ideal: 30, max: 30 },
+          },
+        });
+      } catch (error) {
+        const name = error instanceof DOMException ? error.name : "";
+        if (!["OverconstrainedError", "TypeError"].includes(name)) throw error;
+        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: nextFacing } } });
+      }
       if (requestId !== cameraRequestRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         return;
@@ -1539,9 +1581,9 @@ export default function Home() {
         stream.getTracks().forEach((track) => track.stop());
         return;
       }
-      setImageUrl(null);
-      setImageLoaded(false);
       setCameraOn(true);
+      videoFaceCpuFallbackRef.current = false;
+      videoPoseCpuFallbackRef.current = false;
       setPhotoUrl(null);
       setCapturedBlob(null);
       setReviewingPhoto(false);
@@ -1562,7 +1604,7 @@ export default function Home() {
         streamRef.current?.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         if (videoRef.current) videoRef.current.srcObject = null;
-        setMessage("We couldn’t open your camera. Check your browser permissions or choose a photo to get started.");
+        setMessage("We couldn’t open your camera. Check your browser permissions and allow camera access.");
       }
     }
   }
@@ -1595,29 +1637,7 @@ export default function Home() {
   function toggleCamera() {
     const nextFacing = facing === "user" ? "environment" : "user";
     setFacing(nextFacing);
-    if (cameraOn || imageUrl) {
-      if (imageUrl) setImageUrl(null);
-      void startCamera(nextFacing);
-    }
-  }
-
-  function uploadPhoto(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (imageUrl) URL.revokeObjectURL(imageUrl);
-    const nextUrl = URL.createObjectURL(file);
-    setImageUrl(nextUrl);
-    setImageLoaded(false);
-    setPhotoUrl(null);
-    setCapturedBlob(null);
-    setReviewingPhoto(false);
-    setQrDataUrl(null);
-    setShareUrl(null);
-    setMessage("");
-    posesRef.current = [];
-    poseMaskReadyRef.current = false;
-    setBodyEffectsReady(false);
-    stopCamera();
+    if (cameraOn) void startCamera(nextFacing);
   }
 
   async function syncQueuedPhotos() {
@@ -1662,7 +1682,7 @@ export default function Home() {
     setQrDataUrl(null);
     setShareUrl(null);
     try {
-      await saveQueuedPhoto({ id, filterId: activeFilter.id, createdAt: Date.now(), blob: capturedBlob });
+      await saveQueuedPhoto({ id, filterId: activeFilter?.id ?? activeBackground ?? "none", createdAt: Date.now(), blob: capturedBlob });
       setCapturedBlob(null);
       setMessage(navigator.onLine ? "Photo saved on this booth. Uploading and creating its QR code…" : "Photo saved on this booth. It will sync when the connection returns.");
       await syncQueuedPhotos();
@@ -1689,10 +1709,11 @@ export default function Home() {
     const overlay = canvasRef.current;
     const arOverlay = arCanvasRef.current;
     const video = videoRef.current;
-    const source = imageUrl ? new Image() : null;
     const draw = (image: CanvasImageSource, sourceWidth: number, sourceHeight: number) => {
       if (!canvas) return;
-      const frameAspect = 0.82;
+      const frame = canvas.closest(".camera-frame");
+      const frameBounds = frame?.getBoundingClientRect();
+      const frameAspect = frameBounds && frameBounds.height > 0 ? frameBounds.width / frameBounds.height : 0.82;
       let cropX = 0;
       let cropY = 0;
       let cropWidth = sourceWidth;
@@ -1711,7 +1732,7 @@ export default function Home() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       ctx.save();
-      const mirrorCapture = !imageUrl && facing === "user";
+      const mirrorCapture = facing === "user";
       if (mirrorCapture) {
         ctx.translate(width, 0);
         ctx.scale(-1, 1);
@@ -1733,20 +1754,17 @@ export default function Home() {
         setMessage("Review this shot. Keep it to upload and make a share QR, or retake it.");
       }, "image/png");
     };
-    if (imageUrl && source) {
-      source.onload = () => draw(source, source.naturalWidth, source.naturalHeight);
-      source.src = imageUrl;
-    } else if (video?.videoWidth && video.videoHeight) {
+    if (video?.videoWidth && video.videoHeight) {
       draw(video, video.videoWidth, video.videoHeight);
     } else {
-      setMessage("Start your camera or upload a photo before taking a picture.");
+      setMessage("Start your camera before taking a picture.");
     }
   }
 
   function beginCountdown() {
     if (reviewingPhoto) return;
     if (countdownValueRef.current !== null) return;
-    if (!cameraOn && !imageUrl) {
+    if (!cameraOn) {
       void startCamera();
       return;
     }
@@ -1773,7 +1791,7 @@ export default function Home() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.code !== "Space" || event.repeat || (!cameraOn && !imageUrl)) return;
+      if (event.code !== "Space" || event.repeat || !cameraOn) return;
       const target = event.target;
       if (target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) return;
       event.preventDefault();
@@ -1781,7 +1799,7 @@ export default function Home() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [cameraOn, imageUrl]);
+  }, [cameraOn]);
 
   function selectLens(option: Filter) {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
@@ -1789,7 +1807,6 @@ export default function Home() {
     if (effectCategory === "face") {
       setActiveFilter(option);
       dogTongueStatesRef.current = [];
-      setDogMouthDebug({ openness: null, isOpen: false });
     }
     if (effectCategory === "background") setActiveBackground(option.id);
     if (effectCategory === "costume") setActiveCostume(option.id);
@@ -1797,50 +1814,31 @@ export default function Home() {
 
   return (
     <main className="booth-shell">
-      <header className="topbar">
-        <Link className="wordmark" href="/" aria-label="Afterglow home"><span className="brand-mark">A</span> AFTERGLOW</Link>
-        <div className="topbar-note"><span className={cameraOn ? "live-dot on" : "live-dot"} /> {cameraOn ? "CAMERA READY" : "CAMERA PERMISSION REQUIRED"}</div>
-        <div className="topbar-actions"><Link className="top-link" href="/host">HOST PHOTOS</Link></div>
-      </header>
-
       <section className="booth-layout" id="studio">
         <section className="camera-column" aria-label="Live camera booth">
-          <div className="camera-heading"><span>{reviewingPhoto ? "REVIEW YOUR PHOTO" : "LIVE FACE TRACKING"}</span><span className="frame-counter">{String(activeIndex + 1).padStart(2, "0")} / {String(filters.length).padStart(2, "0")}</span></div>
+          <div className="camera-heading">
+            <span className="camera-live-label"><span className={cameraOn ? "rec-dot recording" : "rec-dot"} />{reviewingPhoto ? "PHOTO REVIEW" : cameraOn ? "LIVE PREVIEW" : "WAITING FOR CAMERA"}</span>
+            <button className="flip-button" onClick={toggleCamera} aria-label="Switch camera" title="Switch camera">FLIP</button>
+          </div>
           <div className="camera-frame">
-            <video ref={videoRef} className={`camera-feed ${facing === "user" ? "mirrored" : ""} ${imageUrl || reviewingPhoto ? "inactive" : ""}`} playsInline muted />
-            {imageUrl && !reviewingPhoto && <NextImage ref={imageRef} className="camera-feed uploaded" src={imageUrl} width={820} height={1000} unoptimized alt="Uploaded portrait preview" onLoad={() => setImageLoaded(true)} />}
+            <video ref={videoRef} className={`camera-feed ${facing === "user" ? "mirrored" : ""} ${reviewingPhoto ? "inactive" : ""}`} autoPlay playsInline muted />
             {reviewingPhoto && photoUrl && <NextImage className="camera-feed captured-photo" src={photoUrl} width={820} height={1000} unoptimized alt="Review your captured photo" />}
             <canvas ref={canvasRef} className={`effect-canvas ${reviewingPhoto ? "inactive" : ""}`} aria-hidden="true" />
             <canvas ref={arCanvasRef} className={`ar-three-canvas ${reviewingPhoto ? "inactive" : ""}`} aria-hidden="true" />
-            {!cameraOn && !imageUrl && !reviewingPhoto && <div className="camera-placeholder"><span className="placeholder-ring" /><div><strong>CAMERA STANDBY</strong><span>Allow camera access in your browser to begin</span></div></div>}
+            {!cameraOn && !reviewingPhoto && <div className="camera-placeholder"><span className="placeholder-ring" /><div><strong>CAMERA STANDBY</strong><span>Allow camera access in your browser to begin</span></div></div>}
             <div className="frame-shade" />
-            <div className="frame-topline"><span className={cameraOn ? "rec-dot recording" : "rec-dot"} /> <span>{reviewingPhoto ? "PHOTO REVIEW" : cameraOn ? "LIVE PREVIEW" : "WAITING FOR CAMERA"}</span></div>
-            <div className="frame-caption"><span>{tracking}</span><strong>{activeFilter.name}</strong></div>
             {countdown !== null && <div className="countdown-overlay" aria-live="assertive" aria-label={`Photo in ${countdown}`}><span>{countdown}</span></div>}
-            {!reviewingPhoto && <button className="flip-button" onClick={toggleCamera} aria-label="Switch camera" title="Switch camera">FLIP</button>}
-            {!reviewingPhoto && activeFilter.id === "dog" && <>
-              <button className="mouth-debug-toggle" aria-pressed={showDogMouthDebug} onClick={() => { setShowDogMouthDebug((enabled) => !enabled); setDogMouthDebug({ openness: null, isOpen: false }); }}>
-                {showDogMouthDebug ? "HIDE MOUTH DEBUG" : "MOUTH DEBUG"}
-              </button>
-              {showDogMouthDebug && <div className="mouth-debug-readout" aria-live="polite">
-                <strong>{dogMouthDebug.openness === null ? "WAITING FOR FACE" : dogMouthDebug.isOpen ? "MOUTH OPEN" : "MOUTH CLOSED"}</strong>
-                <span>jawOpen {dogMouthDebug.openness === null ? "—" : dogMouthDebug.openness.toFixed(2)}</span>
-                <small>open &gt; 0.24 · close &lt; 0.16</small>
-              </div>}
-            </>}
           </div>
 
           {reviewingPhoto ? <div className="review-controls">
             <button className="secondary-button" onClick={retakePhoto}>RETAKE</button>
             <button className="primary-button" onClick={() => void keepPhoto()} disabled={savingPhoto}>{savingPhoto ? "SAVING…" : "KEEP & CREATE QR"}</button>
-            {photoUrl && <a className="local-download" href={photoUrl} download={`afterglow-${activeFilter.id}.png`}>DOWNLOAD LOCAL COPY</a>}
           </div> : <div className="camera-controls">
-            <label className="upload-button" title="Upload a photo"><input type="file" accept="image/*" onChange={uploadPhoto} /><span>UPLOAD</span></label>
             <button className="shutter" onClick={beginCountdown} aria-label="Take a photo"><span className="shutter-inner" /></button>
-            <button className="save-placeholder" onClick={cameraOn || imageUrl ? beginCountdown : () => void startCamera()}>{cameraOn || imageUrl ? "TAKE PHOTO" : "ENABLE CAMERA"}</button>
+            <button className="save-placeholder" onClick={cameraOn ? beginCountdown : () => void startCamera()}>{cameraOn ? "TAKE PHOTO" : "ENABLE CAMERA"}</button>
           </div>}
           {message && <p className="camera-message" role="status">{message}</p>}
-          <div className="permission-note">CAMERA STARTS AUTOMATICALLY · YOUR BROWSER MAY ASK FOR ACCESS</div>
+          <div className="permission-note">{tracking}</div>
           <canvas ref={photoCanvasRef} className="hidden-canvas" />
           <canvas ref={poseMaskCanvasRef} className="hidden-canvas" />
           <canvas ref={poseMaskOutputCanvasRef} className="hidden-canvas" />
@@ -1849,13 +1847,13 @@ export default function Home() {
             <div className="share-card-heading"><div><div className="eyebrow">YOUR PHOTO</div><h2>{savingPhoto ? "Syncing" : qrDataUrl ? "Ready to share" : "Saved on this booth"}</h2></div><span className="share-count">{savingPhoto ? "SYNCING" : qrDataUrl ? "QR READY" : queuedPhotoCount ? "QUEUED" : "LOCAL"}</span></div>
             <div className="share-preview"><NextImage src={photoUrl} width={820} height={1000} unoptimized alt="Captured Halloween photo" />{qrDataUrl && shareUrl ? <a className="qr-link" href={shareUrl} target="_blank" rel="noreferrer"><NextImage className="qr-image" src={qrDataUrl} width={560} height={560} unoptimized alt="QR code to open the photo" /></a> : <div className="qr-pending">{queuedPhotoCount ? "QR will appear after sync" : "Confirm the photo to make a QR"}</div>}</div>
             {shareUrl && <a className="share-url" href={shareUrl} target="_blank" rel="noreferrer">OPEN SHARE PAGE ↗</a>}
-            <a className="share-download" href={photoUrl} download={`afterglow-${activeFilter.id}.png`}>DOWNLOAD PHOTO ↓</a>
+            <a className="share-download" href={photoUrl} download={`afterglow-${activeFilter?.id ?? "photo"}.png`}>DOWNLOAD PHOTO ↓</a>
           </section>}
         </section>
 
         <aside className="filter-panel">
-          <div className="filter-panel-heading"><div><div className="eyebrow">THE COLLECTION</div><h2>{selectedLens?.name ?? "Choose a look"}</h2></div><span className="filter-count">{String(activeIndex + 1).padStart(2, "0")}<br /><i>OF {filters.length}</i></span></div>
-          <div className="lens-description"><span className="lens-pulse" /><p><strong>{effectCategory === "face" ? activeFilter.style === "makeup" ? "REALISTIC MAKEUP" : "FULL-FACE TRANSFORMATION" : effectCategory === "background" ? "TRACKED SCENE" : "TRACKED COSTUME"}</strong><br />{selectedLens?.mood}</p></div>
+          <div className="filter-panel-heading"><div><div className="eyebrow">THE COLLECTION</div><h2>{selectedLens?.name ?? "No filter"}</h2></div><span className="filter-count">{activeIndex >= 0 ? String(activeIndex + 1).padStart(2, "0") : "—"}<br /><i>OF {visibleOptions.length}</i></span></div>
+          <div className="lens-description"><span className="lens-pulse" /><p><strong>{effectCategory === "face" && activeFilter ? activeFilter.style === "makeup" ? "REALISTIC MAKEUP" : "FULL-FACE TRANSFORMATION" : effectCategory === "face" ? "NO FACE FILTER SELECTED" : effectCategory === "background" ? "NO SCENE SELECTED" : "NO COSTUME SELECTED"}</strong><br />{selectedLens?.mood ?? "The camera is clear until you choose a look."}</p></div>
           <div className="effect-tabs lens-tabs" role="tablist" aria-label="Filter category">
             <button role="tab" aria-selected={effectCategory === "face"} className={effectCategory === "face" ? "active" : ""} onClick={() => setEffectCategory("face")}>FACE LOOKS</button>
             <button role="tab" aria-selected={effectCategory === "background"} className={effectCategory === "background" ? "active" : ""} onClick={() => setEffectCategory("background")}>SCENES</button>
@@ -1865,7 +1863,7 @@ export default function Home() {
           <div className="filter-list" role="radiogroup" aria-label={`${effectCategory} filters`}>
             {visibleOptions.map((option) => <button key={option.id} className={`filter-card ${selectedOptionId === option.id ? "selected" : ""}`} onClick={() => selectLens(option)} role="radio" aria-checked={selectedOptionId === option.id} title={`${option.name} — ${option.mood}`}>
               <span className={`filter-swatch swatch-${option.id}`}>
-                {option.texture && <NextImage src={effectCategory === "costume" ? costumeTextureSources[option.texture] : faceTextureSources[option.texture]} fill sizes="60px" alt="" loading="lazy" />}
+                {(option.preview || option.texture) && <NextImage src={option.preview ?? (effectCategory === "costume" ? costumeTextureSources[option.texture] : faceTextureSources[option.texture])} fill sizes="60px" alt="" loading="lazy" />}
                 <span>{option.symbol}</span>
                 {selectedOptionId === option.id && <i aria-hidden="true" />}
               </span>
@@ -1893,7 +1891,6 @@ export default function Home() {
         </div>
       </section>}
 
-      <footer className="page-footer"><span>AFTERGLOW · PHOTO BOOTH</span><span>LIVE TRACKING · UP TO FIVE GUESTS</span><span>MAKE A NIGHT OF IT</span></footer>
     </main>
   );
 }

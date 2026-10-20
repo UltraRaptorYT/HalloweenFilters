@@ -192,13 +192,6 @@ function addSkullAndBoneCrown(parent: THREE.Group) {
   }
 }
 
-function addClownDetails(parent: THREE.Group) {
-  addMesh(parent, new THREE.SphereGeometry(0.2, 28, 22), makeMaterial(0x9f1d2c, 0.16, 0.18), [0, -0.14, 0.52], [0.88, 0.9, 0.85]);
-  for (const side of [-1, 1] as const) {
-    addMesh(parent, new THREE.SphereGeometry(0.11, 20, 14), makeMaterial(0x8b2530, 0.12, 0.25), [side * 0.81, 0.15, 0.02], [0.76, 1.45, 0.32]);
-  }
-}
-
 function addDogTongue(parent: THREE.Group) {
   const tongue = new THREE.Group();
   const rows = 36;
@@ -277,6 +270,7 @@ function makeAccessory(lensId: string) {
     addDogTongue(group);
     return group;
   }
+  if (lensId === "clown") return group;
   if (lensId === "cat") addCatEars(group);
   else if (lensId === "witch") addWitchHat(group);
   else if (lensId === "plague") addBriarCrown(group);
@@ -294,7 +288,6 @@ function makeAccessory(lensId: string) {
       for (const side of [-1, 1] as const) addMesh(group, new THREE.ConeGeometry(0.075, 0.22, 8), fang, [side * 0.17, -0.62, 0.34]);
     }
   } else if (lensId === "spider") addSpider(group);
-  else if (lensId === "clown") addClownDetails(group);
   else if (["frostbite", "ice", "ghost", "boo"].includes(lensId)) addCrystalCrown(group, lensId === "frostbite" || lensId === "ice" ? 0x9ad6e6 : 0xc6d2dc);
   else if (lensId === "skull") addSkullAndBoneCrown(group);
   else if (lensId === "stitched") {
@@ -323,7 +316,8 @@ function disposeTree(root: THREE.Object3D) {
 
 export function createTrackedArRenderer(canvas: HTMLCanvasElement): TrackedArRenderer {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const touchDevice = window.matchMedia("(pointer: coarse)").matches;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, touchDevice ? 1.5 : 2));
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -372,6 +366,10 @@ export function createTrackedArRenderer(canvas: HTMLCanvasElement): TrackedArRen
     update({ faces, width, height, sourceWidth, sourceHeight, mirrored, lensId, tongueOpen = [] }: TrackedArFrame) {
       resize(width, height);
       if (lensId !== currentLensId) setLens(lensId);
+      if (lensId === "none") {
+        renderer.render(scene, camera);
+        return;
+      }
       const scale = Math.max(width / sourceWidth, height / sourceHeight);
       const offsetX = (sourceWidth * scale - width) / 2;
       const offsetY = (sourceHeight * scale - height) / 2;
