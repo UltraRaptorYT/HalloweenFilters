@@ -180,18 +180,6 @@ function addSpider(parent: THREE.Group) {
   }
 }
 
-function addSkullAndBoneCrown(parent: THREE.Group) {
-  const bone = makeMaterial(0xd0c3a8, 0.08, 0.5);
-  for (const side of [-1, 1] as const) {
-    const brow = addMesh(parent, new THREE.SphereGeometry(0.42, 24, 16), bone, [side * 0.43, 0.16, 0.18], [0.94, 0.19, 0.16]);
-    brow.rotation.z = side * -0.1;
-    addMesh(parent, new THREE.SphereGeometry(0.15, 18, 14), bone, [side * 0.72, -0.35, 0.14], [1.45, 0.52, 0.28]);
-  }
-  for (let tooth = 0; tooth < 7; tooth++) {
-    addMesh(parent, new THREE.BoxGeometry(0.085, 0.25, 0.1), bone, [(tooth - 3) * 0.12, -0.68, 0.23]);
-  }
-}
-
 function addDogTongue(parent: THREE.Group) {
   const tongue = new THREE.Group();
   const rows = 36;
@@ -266,42 +254,7 @@ function addDogTongue(parent: THREE.Group) {
 
 function makeAccessory(lensId: string) {
   const group = new THREE.Group();
-  if (lensId === "dog") {
-    addDogTongue(group);
-    return group;
-  }
-  if (lensId === "clown") return group;
-  if (lensId === "cat") addCatEars(group);
-  else if (lensId === "witch") addWitchHat(group);
-  else if (lensId === "plague") addBriarCrown(group);
-  else if (lensId === "devil") {
-    addHorn(group, -1, 0x561d27, 0.95);
-    addHorn(group, 1, 0x561d27, 0.95);
-  } else if (lensId === "pumpkin") {
-    addHorn(group, -1, 0xb95e27, 1.22);
-    addHorn(group, 1, 0xb95e27, 1.22);
-    addMesh(group, new THREE.SphereGeometry(0.47, 24, 18), makeMaterial(0xb85d22, 0.08, 0.48), [0, 0.88, -0.1], [1.3, 0.5, 0.74]);
-  } else if (lensId === "vampire" || lensId === "bats" || lensId === "batgirl") {
-    addBatWings(group, lensId === "vampire" ? 0x4d1b2c : 0x22202d);
-    if (lensId === "vampire") {
-      const fang = makeMaterial(0xf0e5d2, 0.04, 0.26);
-      for (const side of [-1, 1] as const) addMesh(group, new THREE.ConeGeometry(0.075, 0.22, 8), fang, [side * 0.17, -0.62, 0.34]);
-    }
-  } else if (lensId === "spider") addSpider(group);
-  else if (["frostbite", "ice", "ghost", "boo"].includes(lensId)) addCrystalCrown(group, lensId === "frostbite" || lensId === "ice" ? 0x9ad6e6 : 0xc6d2dc);
-  else if (lensId === "skull") addSkullAndBoneCrown(group);
-  else if (lensId === "stitched") {
-    addSkullAndBoneCrown(group);
-    const thread = makeMaterial(0x4b2527, 0.1, 0.6);
-    for (const side of [-1, 1] as const) {
-      for (let stitch = 0; stitch < 4; stitch++) {
-        const staple = addMesh(group, new THREE.BoxGeometry(0.07, 0.025, 0.035), thread, [side * (0.55 + stitch * 0.06), -0.18 - stitch * 0.12, 0.28]);
-        staple.rotation.z = side * 0.5;
-      }
-    }
-  } else {
-    addBriarCrown(group);
-  }
+  if (lensId === "dog") addDogTongue(group);
   return group;
 }
 

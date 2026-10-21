@@ -10,7 +10,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## AR asset direction
 
-Use generated raster image assets for AR props and face details. Do not use SVGs or primitive geometric blocks as visual stand-ins for AR content. Track generated assets to the face and animate them from live facial landmarks or blendshapes.
+Use generated raster image assets for visible AR props and face details. Do not use SVGs, circles, ellipses, or primitive geometric blocks as visual stand-ins for AR content. Track generated assets to the face and animate them from live facial landmarks or blendshapes.
+
+Build face effects from separate, targeted details such as eyes, nose, mouth, and props. Keep the live camera face visible beneath them; do not use generated full-face masks as a replacement or overlay for the whole face.
 
 ## Agent skills
 

@@ -157,7 +157,6 @@ export function drawGrinFilter(
     0,
     Math.min(0.3, smileWidth / currentMouthWidth - 1),
   );
-  console.log(expansion, smileWidth, currentMouthWidth, faceWidth);
   const axisX = {
     x: (eyeCenterB.x - eyeCenterA.x) / eyeDistance,
     y: (eyeCenterB.y - eyeCenterA.y) / eyeDistance,
@@ -179,23 +178,32 @@ export function drawGrinFilter(
   const halfPatchHeight = eyeDistance * 0.78;
   const columns = 40;
   const rows = 20;
+  const edgeBlendAt = (localX: number, localY: number) => {
+    const faceEdgeDistance = Math.max(
+      Math.abs(localX) / Math.max(faceWidth * 0.52, 1),
+      Math.abs(localY) / Math.max(eyeDistance * 0.96, 1),
+    );
+    const edgeProgress = Math.max(0, Math.min(1, (faceEdgeDistance - 0.68) / 0.32));
+    return 1 - edgeProgress * edgeProgress * (3 - 2 * edgeProgress);
+  };
   const warpPoint = (source: Point): Point => {
     const offsetX = source.x - grinCenter.x;
     const offsetY = source.y - grinCenter.y;
     const localX = offsetX * axisX.x + offsetY * axisX.y;
     const localY = offsetX * axisY.x + offsetY * axisY.y;
-    const xFalloff = localX / Math.max(faceWidth * 0.58, 1);
+    const xFalloff = localX / Math.max(faceWidth * 0.46, 1);
     // Keep the bridge and tip of the nose stable while carrying the grin across
     // the cheeks and down the lower face. The lower side gets a wider influence.
-    const verticalReach = eyeDistance * (localY < 0 ? 0.3 : 0.7);
+    const verticalReach = eyeDistance * (localY < 0 ? 0.3 : 0.62);
     const yFalloff = localY / Math.max(verticalReach, 1);
-    const influence = Math.exp(-(xFalloff ** 4) - yFalloff ** 4);
+    const edgeBlend = edgeBlendAt(localX, localY);
+    const influence = Math.exp(-(xFalloff ** 4) - yFalloff ** 4) * edgeBlend;
     const localDisplacementX = localX * expansion * influence;
     const smilePosition = Math.min(1, Math.abs(localX) / (smileWidth * 0.5));
     // Screen Y increases downward: this parabola drops the middle toward the chin
     // and lifts both ends toward the cheekbones, even when the source mouth is neutral.
     const smileCurve =
-      eyeDistance * (0.35 - 1.08 * smilePosition ** 2) * influence;
+      eyeDistance * (0.24 - 0.78 * smilePosition ** 2) * influence;
     return {
       x: source.x + axisX.x * localDisplacementX + axisY.x * smileCurve,
       y: source.y + axisX.y * localDisplacementX + axisY.y * smileCurve,

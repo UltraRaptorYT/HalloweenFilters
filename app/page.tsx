@@ -20,43 +20,20 @@ type Filter = {
 };
 
 const filters: Filter[] = [
-  { id: "dog", name: "Good Dog", mood: "OPEN YOUR MOUTH FOR A SCREEN LICK", symbol: "DOG", texture: "", style: "transformation", tint: "#9a684a" },
-  { id: "skull", name: "Ossuary", mood: "HAND-AGED BONE · MAKEUP", symbol: "BONE", texture: "ossuary", style: "makeup", tint: "#d1c3a5" },
-  { id: "possessed", name: "Possessed", mood: "SOOT, SHADOW & CRACKED SKIN", symbol: "SOOT", texture: "fractured-skin", style: "makeup", tint: "#81717f" },
-  { id: "vampire", name: "Blood Countess", mood: "BRUISED PLUM & VEINED SKIN", symbol: "VEIN", texture: "vampire", style: "makeup", tint: "#6d293b" },
-  { id: "stitched", name: "The Stitched", mood: "RAISED SCARS & WORN THREAD", symbol: "SEAM", texture: "stitched", style: "makeup", tint: "#725653" },
-  { id: "frostbite", name: "Frostbitten", mood: "COLD-BURNED & BLOODLESS", symbol: "FROST", texture: "frostbitten", style: "makeup", tint: "#a3bdc8" },
-  { id: "plague", name: "The Hollow", mood: "DECAYED OLIVE & SUNKEN EYES", symbol: "HOLLOW", texture: "hag", style: "makeup", tint: "#788063" },
-  { id: "pumpkin", name: "Harvest Warden", mood: "CARVED BONE & CANDLE ASH", symbol: "HARVEST", texture: "ossuary-alt", style: "transformation", tint: "#b66d3d" },
-  { id: "devil", name: "Ash Horns", mood: "CHARRED SKIN & RAISED BROW", symbol: "ASH", texture: "vampire", style: "transformation", tint: "#7d302f" },
-  { id: "bats", name: "Night Swarm", mood: "NOCTURNAL MARKS & WINGED SHADOW", symbol: "NIGHT", texture: "carnival", style: "transformation", tint: "#332b3d" },
-  { id: "spider", name: "Widow's Web", mood: "INKED SILK & SPIDER VEINS", symbol: "WEB", texture: "stitched", style: "transformation", tint: "#4b344f" },
-  { id: "ice", name: "Whiteout", mood: "FROZEN LASHES & ICE CRYSTAL", symbol: "ICE", texture: "frostbitten", style: "transformation", tint: "#95c6d3" },
-  { id: "clown", name: "The Grin", mood: "RED EYES & A WIDE, TRACKED SMILE", symbol: "GRIN", texture: "", preview: "/filters/grin-red-iris.png", style: "transformation", tint: "#863f47" },
-  { id: "boo", name: "The Veiled", mood: "ASHEN SKIN & EMPTY LIGHT", symbol: "VEIL", texture: "frostbitten", style: "transformation", tint: "#a1a7b4" },
-  { id: "beret", name: "Candy Widow", mood: "SUGAR GLASS & OLD ROUGE", symbol: "ROUGE", texture: "carnival", style: "transformation", tint: "#7d3a50" },
-  { id: "cat", name: "Black Cat", mood: "SMOKE, SLATE & REFLECTIVE EYES", symbol: "FELINE", texture: "hag", style: "transformation", tint: "#403746" },
-  { id: "witch", name: "The Briar Witch", mood: "MOSS, WRINKLED LATEX & VEINS", symbol: "BRIAR", texture: "hag", style: "transformation", tint: "#6e7250" },
-  { id: "batgirl", name: "Nightwing", mood: "INK-BLACK FEATHERS & ASH", symbol: "WING", texture: "carnival", style: "transformation", tint: "#343347" },
-  { id: "ghost", name: "Cold Specter", mood: "WAXEN SKIN & VEIL-LIKE FOG", symbol: "WRAITH", texture: "frostbitten", style: "transformation", tint: "#a9bdc0" },
+  { id: "dog", name: "Good Dog", mood: "OPEN YOUR MOUTH FOR A SCREEN LICK", symbol: "DOG", texture: "", preview: "/icons/good-dog.webp", style: "transformation", tint: "#9a684a" },
+  { id: "clown", name: "The Grin", mood: "RED EYES & A WIDE, TRACKED SMILE", symbol: "GRIN", texture: "", preview: "/icons/the-grin.webp", style: "transformation", tint: "#863f47" },
 ];
 const maxTrackedFaces = 5;
 const maxTrackedPoses = 5;
 const backgrounds: Filter[] = [
-  { id: "none", name: "Camera room", mood: "ORIGINAL BACKGROUND", symbol: "ROOM", texture: "", style: "makeup", tint: "#000000" },
-  { id: "forest", name: "Haunted forest", mood: "FOG & MOONLIGHT", symbol: "FOG", texture: "", style: "makeup", tint: "#000000" },
-  { id: "pumpkin-night", name: "Pumpkin night", mood: "CANDLELIT GLOW", symbol: "EMBER", texture: "", style: "makeup", tint: "#000000" },
+  { id: "none", name: "Camera room", mood: "ORIGINAL BACKGROUND", symbol: "ROOM", texture: "", preview: "/icons/camera-room.webp", style: "makeup", tint: "#000000" },
+  { id: "forest", name: "Haunted forest", mood: "FOG & MOONLIGHT", symbol: "FOG", texture: "", preview: "/scenes/haunted-forest.webp", style: "makeup", tint: "#000000" },
+  { id: "pumpkin-night", name: "Pumpkin night", mood: "CANDLELIT GLOW", symbol: "EMBER", texture: "", preview: "/scenes/pumpkin-night.webp", style: "makeup", tint: "#000000" },
 ];
 const sceneImageSources: Record<string, string> = {
   forest: "/scenes/haunted-forest.webp",
   "pumpkin-night": "/scenes/pumpkin-night.webp",
 };
-const costumes: Filter[] = [
-  { id: "none", name: "No costume", mood: "KEEP YOUR LOOK", symbol: "NONE", texture: "", style: "makeup", tint: "#000000" },
-  { id: "witch-cloak", name: "Witch cloak", mood: "EMBROIDERED FOREST VELVET", symbol: "CLOAK", texture: "witch-velvet", style: "makeup", tint: "#000000" },
-  { id: "vampire-cape", name: "Vampire cape", mood: "OXBLOOD BROCADE", symbol: "CAPE", texture: "vampire-brocade", style: "makeup", tint: "#000000" },
-  { id: "skeleton-suit", name: "Skeleton suit", mood: "HAND-AGED BONE ARMOR", symbol: "BONES", texture: "aged-bone", style: "makeup", tint: "#000000" },
-];
 const costumeTextureSources: Record<string, string> = {
   "witch-velvet": "/costumes/witch-velvet.webp",
   "vampire-brocade": "/costumes/vampire-brocade.webp",
@@ -78,7 +55,6 @@ const dogImageSources = {
   muzzle: "/filters/dog-muzzle-v2.png",
   lick: "/filters/dog-lick.png",
 };
-
 type DogEarPhysics = {
   left: number;
   right: number;
@@ -468,7 +444,7 @@ function drawHorrorMakeup(ctx: CanvasRenderingContext2D, effect: string, localPo
   const mouthRight = localPoint(291);
   const eyeY = (leftEye.y + rightEye.y) / 2;
   const cheekY = (eyeY + mouth.y) / 2;
-  const color = effect === "skull" ? "#e3d5bb" : effect === "vampire" ? "#48202c" : effect === "frostbite" ? "#9eb8be" : effect === "plague" ? "#777953" : effect === "stitched" ? "#875451" : "#3b2a43";
+  const color = effect === "vampire" ? "#48202c" : effect === "frostbite" ? "#9eb8be" : effect === "plague" ? "#777953" : effect === "stitched" ? "#875451" : "#3b2a43";
 
   ctx.save();
   ctx.beginPath();
@@ -483,14 +459,14 @@ function drawHorrorMakeup(ctx: CanvasRenderingContext2D, effect: string, localPo
   // Blend pigment into the live face instead of laying an opaque decal over it.
   ctx.globalCompositeOperation = "multiply";
   const wash = ctx.createRadialGradient(0, eyeY, eyeDistance * 0.12, 0, cheekY, faceWidth * 0.75);
-  wash.addColorStop(0, effect === "skull" ? "#d9cba455" : `${color}72`);
+  wash.addColorStop(0, `${color}72`);
   wash.addColorStop(0.62, `${color}48`);
   wash.addColorStop(1, "#17131900");
   ctx.fillStyle = wash;
   ctx.fillRect(-faceWidth, -eyeDistance * 1.05, faceWidth * 2, eyeDistance * 2.5);
 
   const socket = (eye: { x: number; y: number }, side: number) => {
-    const radius = eyeDistance * (effect === "skull" ? 0.32 : 0.29);
+    const radius = eyeDistance * 0.29;
     const shade = ctx.createRadialGradient(eye.x, eye.y, radius * 0.22, eye.x, eye.y, radius * 1.65);
     shade.addColorStop(0, effect === "vampire" ? "#160b13ed" : "#100e17ed");
     shade.addColorStop(0.64, effect === "frostbite" ? "#334a55ad" : "#261722bf");
@@ -503,30 +479,7 @@ function drawHorrorMakeup(ctx: CanvasRenderingContext2D, effect: string, localPo
   socket(leftEye, -1);
   socket(rightEye, 1);
 
-  if (effect === "skull") {
-    // Bone highlights sit along the brow, bridge and cheek ridges; the face remains visible underneath.
-    ctx.globalCompositeOperation = "screen";
-    ctx.globalAlpha = 0.34;
-    ctx.strokeStyle = "#f1e7d1";
-    ctx.lineCap = "round";
-    ctx.lineWidth = eyeDistance * 0.13;
-    ctx.beginPath(); ctx.moveTo(leftEye.x - eyeDistance * 0.25, leftEye.y - eyeDistance * 0.32); ctx.quadraticCurveTo(0, eyeY - eyeDistance * 0.55, rightEye.x + eyeDistance * 0.25, rightEye.y - eyeDistance * 0.32); ctx.stroke();
-    for (const side of [-1, 1]) {
-      ctx.beginPath(); ctx.moveTo(nose.x + side * eyeDistance * 0.07, nose.y - eyeDistance * 0.25); ctx.quadraticCurveTo(side * eyeDistance * 0.23, nose.y + eyeDistance * 0.18, side * eyeDistance * 0.44, cheekY + eyeDistance * 0.2); ctx.stroke();
-    }
-    ctx.globalCompositeOperation = "multiply";
-    const nasalShadow = ctx.createRadialGradient(nose.x, nose.y + eyeDistance * 0.16, 1, nose.x, nose.y + eyeDistance * 0.13, eyeDistance * 0.23);
-    nasalShadow.addColorStop(0, "#1a1119ee"); nasalShadow.addColorStop(1, "#1a111900");
-    ctx.fillStyle = nasalShadow; ctx.beginPath(); ctx.ellipse(nose.x, nose.y + eyeDistance * 0.13, eyeDistance * 0.18, eyeDistance * 0.23, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 0.76;
-    ctx.strokeStyle = "#24171d"; ctx.lineWidth = eyeDistance * 0.035;
-    ctx.beginPath(); ctx.moveTo(mouthLeft.x, mouthLeft.y); ctx.quadraticCurveTo(0, mouth.y + eyeDistance * 0.13, mouthRight.x, mouthRight.y); ctx.stroke();
-    for (let i = 0; i < 11; i++) {
-      const x = mouthLeft.x + (mouthRight.x - mouthLeft.x) * (i / 10);
-      const y = mouth.y + eyeDistance * 0.08;
-      ctx.beginPath(); ctx.moveTo(x, y - eyeDistance * 0.055); ctx.lineTo(x + (i % 2 ? 1 : -1) * eyeDistance * 0.014, y + eyeDistance * 0.055); ctx.stroke();
-    }
-  } else if (effect === "vampire") {
+  if (effect === "vampire") {
     ctx.globalCompositeOperation = "multiply";
     const blood = ctx.createLinearGradient(0, mouth.y - eyeDistance * 0.05, 0, mouth.y + eyeDistance * 0.68);
     blood.addColorStop(0, "#711b2d55"); blood.addColorStop(0.35, "#8f152aaf"); blood.addColorStop(1, "#3a101c00");
@@ -562,7 +515,7 @@ function drawHorrorMakeup(ctx: CanvasRenderingContext2D, effect: string, localPo
 
   // Small, repeatable pigment fractures add material detail without a flat graphic edge.
   ctx.globalCompositeOperation = "multiply";
-  ctx.globalAlpha = effect === "skull" ? 0.38 : 0.28;
+  ctx.globalAlpha = 0.28;
   ctx.strokeStyle = effect === "frostbite" ? "#e5f3f2" : "#241b20";
   ctx.lineWidth = Math.max(0.7, eyeDistance * 0.008);
   for (let i = 0; i < 9; i++) {
@@ -727,7 +680,7 @@ function drawFaceEffect(ctx: CanvasRenderingContext2D, effect: string, landmarks
   ctx.translate(center.x, center.y);
   ctx.rotate(angle);
 
-  if (["skull", "possessed", "vampire", "stitched", "frostbite", "plague"].includes(effect)) {
+  if (["possessed", "vampire", "stitched", "frostbite", "plague"].includes(effect)) {
     drawHorrorMakeup(ctx, effect, localPoint, eyeDistance, faceWidth);
     ctx.restore();
     return;
@@ -748,48 +701,6 @@ function drawFaceEffect(ctx: CanvasRenderingContext2D, effect: string, landmarks
       ctx.fillStyle = "#ffffffc9";
       ctx.beginPath(); ctx.arc(x - radius * 0.24, y - radius * 0.28, radius * 0.2, 0, Math.PI * 2); ctx.fill();
     }
-  }
-
-  if (effect === "skull") {
-    const socket = (eye: Landmark) => {
-      const eyeCenter = localPoint(eye === leftEye ? 33 : 263);
-      ctx.save();
-      ctx.translate(eyeCenter.x, eyeCenter.y);
-      ctx.fillStyle = "#17131c";
-      ctx.shadowColor = "#0d0b12";
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, eyeDistance * 0.27, eyeDistance * 0.19, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    };
-    socket(leftEye);
-    socket(rightEye);
-    ctx.fillStyle = "#17131c";
-    ctx.beginPath();
-    ctx.moveTo(0, eyeDistance * 0.04);
-    ctx.lineTo(-eyeDistance * 0.11, eyeDistance * 0.25);
-    ctx.lineTo(eyeDistance * 0.11, eyeDistance * 0.25);
-    ctx.closePath();
-    ctx.fill();
-    const mouth = localPoint(13);
-    const mouthLeft = localPoint(61);
-    const mouthRight = localPoint(291);
-    ctx.strokeStyle = "#21151b";
-    ctx.lineWidth = Math.max(2, eyeDistance * 0.035);
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(mouthLeft.x, mouthLeft.y);
-    ctx.quadraticCurveTo(0, mouth.y + eyeDistance * 0.05, mouthRight.x, mouthRight.y);
-    ctx.stroke();
-    ctx.lineWidth = Math.max(1, eyeDistance * 0.012);
-    const smileY = mouth.y + eyeDistance * 0.05;
-    for (let i = 0; i < 9; i++) {
-      const x = -faceWidth * 0.25 + i * faceWidth * 0.0625;
-      ctx.beginPath(); ctx.moveTo(x, smileY - eyeDistance * 0.04); ctx.lineTo(x, smileY + eyeDistance * 0.04); ctx.stroke();
-    }
-    ctx.restore();
-    return;
   }
 
   if (effect === "ice") {
@@ -1061,12 +972,12 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [tracking, setTracking] = useState("Loading face tracking…");
   const [bodyEffectsReady, setBodyEffectsReady] = useState(false);
-  const [effectCategory, setEffectCategory] = useState<"face" | "background" | "costume">("face");
+  const [effectCategory, setEffectCategory] = useState<"face" | "background">("face");
   const [activeBackground, setActiveBackground] = useState("none");
-  const [activeCostume, setActiveCostume] = useState("none");
-  const needsBodyTracking = activeBackground !== "none" || activeCostume !== "none";
-  const visibleOptions = effectCategory === "face" ? filters : effectCategory === "background" ? backgrounds : costumes;
-  const selectedOptionId = effectCategory === "face" ? activeFilter?.id ?? "none" : effectCategory === "background" ? activeBackground : activeCostume;
+  const activeCostume = "none";
+  const needsBodyTracking = activeBackground !== "none";
+  const visibleOptions = effectCategory === "face" ? filters : backgrounds;
+  const selectedOptionId = effectCategory === "face" ? activeFilter?.id ?? "none" : activeBackground;
   const activeIndex = visibleOptions.findIndex((option) => option.id === selectedOptionId);
   const selectedLens = visibleOptions.find((option) => option.id === selectedOptionId);
 
@@ -1807,9 +1718,9 @@ export default function Home() {
     if (effectCategory === "face") {
       setActiveFilter(option);
       dogTongueStatesRef.current = [];
+    } else {
+      setActiveBackground(option.id);
     }
-    if (effectCategory === "background") setActiveBackground(option.id);
-    if (effectCategory === "costume") setActiveCostume(option.id);
   }
 
   return (
@@ -1853,23 +1764,25 @@ export default function Home() {
 
         <aside className="filter-panel">
           <div className="filter-panel-heading"><div><div className="eyebrow">THE COLLECTION</div><h2>{selectedLens?.name ?? "No filter"}</h2></div><span className="filter-count">{activeIndex >= 0 ? String(activeIndex + 1).padStart(2, "0") : "—"}<br /><i>OF {visibleOptions.length}</i></span></div>
-          <div className="lens-description"><span className="lens-pulse" /><p><strong>{effectCategory === "face" && activeFilter ? activeFilter.style === "makeup" ? "REALISTIC MAKEUP" : "FULL-FACE TRANSFORMATION" : effectCategory === "face" ? "NO FACE FILTER SELECTED" : effectCategory === "background" ? "NO SCENE SELECTED" : "NO COSTUME SELECTED"}</strong><br />{selectedLens?.mood ?? "The camera is clear until you choose a look."}</p></div>
-          <div className="effect-tabs lens-tabs" role="tablist" aria-label="Filter category">
+          <div className="lens-description"><span className="lens-pulse" /><p><strong>{effectCategory === "face" ? activeFilter ? activeFilter.style === "makeup" ? "REALISTIC MAKEUP" : "FULL-FACE TRANSFORMATION" : "NO FACE FILTER SELECTED" : "TRACKED SCENE"}</strong><br />{selectedLens?.mood ?? "The camera is clear until you choose a look."}</p></div>
+          <div className="effect-tabs lens-tabs lens-tabs-two" role="tablist" aria-label="Filter category">
             <button role="tab" aria-selected={effectCategory === "face"} className={effectCategory === "face" ? "active" : ""} onClick={() => setEffectCategory("face")}>FACE LOOKS</button>
             <button role="tab" aria-selected={effectCategory === "background"} className={effectCategory === "background" ? "active" : ""} onClick={() => setEffectCategory("background")}>SCENES</button>
-            <button role="tab" aria-selected={effectCategory === "costume"} className={effectCategory === "costume" ? "active" : ""} onClick={() => setEffectCategory("costume")}>COSTUMES</button>
           </div>
           {needsBodyTracking && !bodyEffectsReady && <p className="body-status" role="status">Preparing body tracking. Keep your shoulders and upper body in view.</p>}
-          <div className="filter-list" role="radiogroup" aria-label={`${effectCategory} filters`}>
-            {visibleOptions.map((option) => <button key={option.id} className={`filter-card ${selectedOptionId === option.id ? "selected" : ""}`} onClick={() => selectLens(option)} role="radio" aria-checked={selectedOptionId === option.id} title={`${option.name} — ${option.mood}`}>
-              <span className={`filter-swatch swatch-${option.id}`}>
-                {(option.preview || option.texture) && <NextImage src={option.preview ?? (effectCategory === "costume" ? costumeTextureSources[option.texture] : faceTextureSources[option.texture])} fill sizes="60px" alt="" loading="lazy" />}
-                <span>{option.symbol}</span>
-                {selectedOptionId === option.id && <i aria-hidden="true" />}
-              </span>
-              <span className="filter-name-wrap"><strong>{option.name}</strong><small>{effectCategory === "face" ? option.style.toUpperCase() : option.mood}</small></span>
-              <span className="filter-arrow" aria-hidden="true">↗</span>
-            </button>)}
+          <div className={`filter-list ${effectCategory === "background" ? "scene-list" : ""}`} role="radiogroup" aria-label={effectCategory === "face" ? "Face filters" : "Background scenes"}>
+            {visibleOptions.map((option) => {
+              const isScene = effectCategory === "background";
+              return <button key={option.id} className={`filter-card ${isScene ? "filter-card-scene" : ""} ${selectedOptionId === option.id ? "selected" : ""}`} onClick={() => selectLens(option)} role="radio" aria-checked={selectedOptionId === option.id} title={`${option.name} — ${option.mood}`}>
+                <span className={`filter-swatch ${isScene ? "scene-card-visual" : ""} swatch-${option.id}`}>
+                  {(option.preview || option.texture) && <NextImage src={option.preview ?? faceTextureSources[option.texture]} fill sizes={isScene ? "(max-width: 560px) 45vw, 260px" : "96px"} alt="" loading="lazy" />}
+                  {!isScene && <span>{option.symbol}</span>}
+                  {selectedOptionId === option.id && <i aria-hidden="true" />}
+                </span>
+                <span className="filter-name-wrap"><strong>{option.name}</strong><small>{isScene ? option.mood : option.style.toUpperCase()}</small></span>
+                <span className="filter-arrow" aria-hidden="true">↗</span>
+              </button>;
+            })}
           </div>
           <div className="filter-tip"><span className="tip-mark">AR</span><p><strong>Move naturally</strong><br />3D pieces follow your face position, size, tilt, and turn. Tracking runs on this device.</p></div>
         </aside>
