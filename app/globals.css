@@ -110,7 +110,6 @@ button { color: inherit; }
 .swatch-ghost::before { background: radial-gradient(circle at 50% 35%, #edf5ff 0, #b7c7e9 16%, transparent 36%), linear-gradient(145deg, #7e789e, #27253c 78%); }
 .swatch-none::before { background: radial-gradient(circle at 50% 40%, #eee5d6, transparent 35%), linear-gradient(145deg, #b6a9a0, #645a65); }
 .swatch-forest::before { background: radial-gradient(circle at 68% 30%, #dce7f4, transparent 21%), linear-gradient(145deg, #52637b, #1e2436 72%); }
-.swatch-pumpkin-night::before { background: radial-gradient(circle at 70% 28%, #ffe0aa, transparent 25%), linear-gradient(145deg, #805071, #302139 74%); }
 .swatch-witch-cloak::before { background: radial-gradient(circle at 50% 35%, #c5a9ff, transparent 28%), linear-gradient(145deg, #654b8d, #201d36 76%); }
 .swatch-vampire-cape::before { background: radial-gradient(circle at 50% 35%, #e8959a, transparent 28%), linear-gradient(145deg, #884152, #21182e 76%); }
 .swatch-skeleton-suit::before { background: radial-gradient(circle at 50% 35%, #f1eadb, transparent 28%), linear-gradient(145deg, #696375, #211e2e 76%); }

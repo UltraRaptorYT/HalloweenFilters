@@ -7,6 +7,7 @@ import type { TrackedArRenderer } from "@/lib/tracked-3d-lenses";
 import { drawGrinFilter } from "@/lib/grin-filter";
 import { normalizeLipGap, shouldDogTongueBeOpen } from "@/lib/dog-mouth";
 import { getQueuedPhotos, removeQueuedPhoto, saveQueuedPhoto } from "@/lib/offline-photo-queue";
+import { drawVoodooSkullFilter, type VoodooSkullImages } from "@/lib/voodoo-skull-filter";
 
 type Filter = {
   id: string;
@@ -22,17 +23,22 @@ type Filter = {
 const filters: Filter[] = [
   { id: "dog", name: "Good Dog", mood: "OPEN YOUR MOUTH FOR A SCREEN LICK", symbol: "DOG", texture: "", preview: "/icons/good-dog.webp", style: "transformation", tint: "#9a684a" },
   { id: "clown", name: "The Grin", mood: "RED EYES & A WIDE, TRACKED SMILE", symbol: "GRIN", texture: "", preview: "/icons/the-grin.webp", style: "transformation", tint: "#863f47" },
+  { id: "voodoo-skull", name: "Voodoo Skull", mood: "SMOKY EYES & A SEWN SMILE", symbol: "VOODOO", texture: "", preview: "/filters/voodoo-sockets.webp", style: "makeup", tint: "#831b24" },
 ];
 const maxTrackedFaces = 5;
 const maxTrackedPoses = 5;
 const backgrounds: Filter[] = [
   { id: "none", name: "Camera room", mood: "ORIGINAL BACKGROUND", symbol: "ROOM", texture: "", preview: "/icons/camera-room.webp", style: "makeup", tint: "#000000" },
   { id: "forest", name: "Haunted forest", mood: "FOG & MOONLIGHT", symbol: "FOG", texture: "", preview: "/scenes/haunted-forest.webp", style: "makeup", tint: "#000000" },
-  { id: "pumpkin-night", name: "Pumpkin night", mood: "CANDLELIT GLOW", symbol: "EMBER", texture: "", preview: "/scenes/pumpkin-night.webp", style: "makeup", tint: "#000000" },
+  { id: "graveyard", name: "Moonlit graveyard", mood: "MIST & MOONLIGHT", symbol: "CRYPT", texture: "", preview: "/scenes/graveyard.webp", style: "makeup", tint: "#000000" },
+  { id: "haunted-manor", name: "Haunted manor", mood: "GHOSTLY ESTATE", symbol: "MANOR", texture: "", preview: "/scenes/haunted-manor.webp", style: "makeup", tint: "#000000" },
+  { id: "pumpkin-patch", name: "Pumpkin patch", mood: "HARVEST MOON", symbol: "PATCH", texture: "", preview: "/scenes/pumpkin-patch.webp", style: "makeup", tint: "#000000" },
 ];
 const sceneImageSources: Record<string, string> = {
   forest: "/scenes/haunted-forest.webp",
-  "pumpkin-night": "/scenes/pumpkin-night.webp",
+  graveyard: "/scenes/graveyard.webp",
+  "haunted-manor": "/scenes/haunted-manor.webp",
+  "pumpkin-patch": "/scenes/pumpkin-patch.webp",
 };
 const costumeTextureSources: Record<string, string> = {
   "witch-velvet": "/costumes/witch-velvet.webp",
@@ -54,6 +60,13 @@ const dogImageSources = {
   ears: "/filters/dog-ears.png",
   muzzle: "/filters/dog-muzzle-v2.png",
   lick: "/filters/dog-lick.png",
+};
+const voodooSkullImageSources: Record<keyof VoodooSkullImages, string> = {
+  iris: "/filters/voodoo-iris.webp",
+  whiteEye: "/filters/voodoo-white-eye.webp",
+  nose: "/filters/voodoo-nose.webp",
+  triangle: "/filters/voodoo-triangle.png",
+  tears: "/filters/voodoo-tears.webp",
 };
 type DogEarPhysics = {
   left: number;
@@ -938,6 +951,7 @@ export default function Home() {
   const faceOpennessRef = useRef<number[]>([]);
   const faceTexturesRef = useRef<Record<string, FaceTexture>>({});
   const dogImagesRef = useRef<Partial<Record<keyof typeof dogImageSources, HTMLImageElement>>>({});
+  const voodooSkullImagesRef = useRef<Partial<VoodooSkullImages>>({});
   const grinIrisRef = useRef<HTMLImageElement | null>(null);
   const grinFrameCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const dogTongueStatesRef = useRef<Array<{ isOpen: boolean; openedAt: number }>>([]);
@@ -1035,6 +1049,18 @@ export default function Home() {
       const image = new Image();
       image.onload = () => {
         if (!cancelled) sceneImagesRef.current[scene] = image;
+      };
+      image.src = source;
+    }
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    for (const [name, source] of Object.entries(voodooSkullImageSources) as [keyof VoodooSkullImages, string][]) {
+      const image = new Image();
+      image.onload = () => {
+        if (!cancelled) voodooSkullImagesRef.current[name] = image;
       };
       image.src = source;
     }
@@ -1361,6 +1387,10 @@ export default function Home() {
         }
         if (activeFilter.id === "clown") {
           if (grinFrame) drawGrinFilter(ctx, grinFrame, faceLandmarks, grinIrisRef.current, width, height, sourceWidth, sourceHeight, mirrored);
+          continue;
+        }
+        if (activeFilter.id === "voodoo-skull") {
+          drawVoodooSkullFilter(ctx, faceLandmarks, voodooSkullImagesRef.current, width, height, sourceWidth, sourceHeight, mirrored);
           continue;
         }
         const texture = faceTexturesRef.current[activeFilter.texture];
