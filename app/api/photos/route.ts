@@ -4,6 +4,11 @@ import QRCode from "qrcode";
 const bucket = "halloween-photos";
 const maxPhotoBytes = 15 * 1024 * 1024;
 
+function getTimestampedPhotoName(date = new Date()) {
+  const timestamp = date.toISOString().replace(/[-:]/g, "").replace("T", "_").slice(0, 15);
+  return `${timestamp}.png`;
+}
+
 export async function POST(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SECRET_KEY;
@@ -30,7 +35,7 @@ export async function POST(request: Request) {
   const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   const shareUrl = new URL(`/photos/${id}`, origin).toString();
   const supabase = createClient(supabaseUrl, secretKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const photoPath = `${id}/photo.png`;
+  const photoPath = `${id}/${getTimestampedPhotoName()}`;
   const qrPath = `${id}/qr.png`;
 
   const { data: existing, error: existingError } = await supabase.from("photo_shares").select("id,share_url").eq("id", id).maybeSingle();
@@ -44,15 +49,9 @@ export async function POST(request: Request) {
   const photoUpload = await supabase.storage.from(bucket).upload(photoPath, await photo.arrayBuffer(), { contentType: "image/png", upsert: true });
   if (photoUpload.error) return Response.json({ error: `Could not save the photo: ${photoUpload.error.message}` }, { status: 502 });
 
-  const qrUpload = await supabase.storage.from(bucket).upload(qrPath, qrBytes, { contentType: "image/png", upsert: true });
-  if (qrUpload.error) {
-    await supabase.storage.from(bucket).remove([photoPath]);
-    return Response.json({ error: `Could not save the QR code: ${qrUpload.error.message}` }, { status: 502 });
-  }
-
   const { error: insertError } = await supabase.from("photo_shares").insert({ id, photo_path: photoPath, qr_path: qrPath, share_url: shareUrl });
   if (insertError) {
-    await supabase.storage.from(bucket).remove([photoPath, qrPath]);
+    await supabase.storage.from(bucket).remove([photoPath]);
     return Response.json({ error: `Could not save the photo record: ${insertError.message}` }, { status: 502 });
   }
 
